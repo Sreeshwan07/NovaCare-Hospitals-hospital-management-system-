@@ -1,0 +1,95 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email != null && request.auth.token.email.lower() == 'mdr.gemini@gmail.com';
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['email', 'createdAt', 'updatedAt'])
+        && data.keys().size() == 3
+        && data.email is string
+        && data.email.size() <= 256
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidAppointment(data) {
+      return data.keys().hasAll(['userId', 'firstName', 'lastName', 'phone', 'preferredDate', 'departmentId', 'status', 'createdAt'])
+        && data.userId is string
+        && data.userId.size() <= 128
+        && data.firstName is string
+        && data.firstName.size() <= 100
+        && data.lastName is string
+        && data.lastName.size() <= 100
+        && data.phone is string
+        && data.phone.size() <= 50
+        && data.preferredDate is string
+        && data.preferredDate.size() <= 20
+        && data.departmentId is string
+        && data.departmentId.size() <= 128
+        && data.status is string
+        && data.status in ['pending', 'confirmed', 'cancelled']
+        && data.createdAt is timestamp
+        // Optional fields
+        && (!('doctorId' in data) || (data.doctorId is string && data.doctorId.size() <= 128))
+        && (!('reason' in data) || (data.reason is string && data.reason.size() <= 2000));
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow create: if isSignedIn() 
+        && isValidId(userId) 
+        && request.auth.uid == userId
+        && isValidUser(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isSignedIn()
+        && isValidId(userId)
+        && request.auth.uid == userId
+        && incoming().diff(existing()).affectedKeys().hasOnly(['updatedAt'])
+        && incoming().updatedAt == request.time;
+        
+      allow write: if isAdmin();
+    }
+
+    match /appointments/{appointmentId} {
+      allow get: if isAdmin() || (isSignedIn() && existing().userId == request.auth.uid);
+      allow list: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow create: if isSignedIn()
+        && isValidId(appointmentId)
+        && isValidAppointment(incoming())
+        && (isAdmin() || incoming().userId == request.auth.uid)
+        && incoming().createdAt == request.time;
+      allow update: if isAdmin() || (
+        isSignedIn()
+        && isValidId(appointmentId)
+        && existing().userId == request.auth.uid
+        && existing().status == 'pending'
+        && incoming().diff(existing()).affectedKeys().hasOnly(['status'])
+        && incoming().status == 'cancelled'
+      );
+      allow delete: if isAdmin();
+    }
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile data",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "description": "User's email address"
+        },
+        "createdAt": {
+          "type": "number",
+          "description": "Creation timestamp in ms"
+        },
+        "updatedAt": {
+          "type": "number",
+          "description": "Last update timestamp in ms"
+        }
+      },
+      "required": ["email", "createdAt", "updatedAt"]
+    },
+    "Appointment": {
+      "title": "Appointment",
+      "description": "Appointment booking",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "ID of the user who booked"
+        },
+        "firstName": {
+          "type": "string",
+          "description": "First name of patient"
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Last name of patient"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Phone number"
+        },
+        "preferredDate": {
+          "type": "string",
+          "description": "Preferred appointment date (YYYY-MM-DD)"
+        },
+        "departmentId": {
+          "type": "string",
+          "description": "Selected department ID"
+        },
+        "doctorId": {
+          "type": "string",
+          "description": "Selected doctor ID (optional)"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason for visit"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "confirmed", "cancelled"]
+        },
+        "createdAt": {
+          "type": "number",
+          "description": "Creation timestamp"
+        }
+      },
+      "required": ["userId", "firstName", "lastName", "phone", "preferredDate", "departmentId", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profiles"
+    },
+    "/appointments/{appointmentId}": {
+      "schema": { "$ref": "#/entities/Appointment" },
+      "description": "User appointments"
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "NovaCare Hospitals",
+  "description": "Modern hospital website with department listings, doctor profiles, and appointment booking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
